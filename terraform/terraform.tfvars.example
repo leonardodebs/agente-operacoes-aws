@@ -1,0 +1,12 @@
+# Copie para terraform.tfvars e ajuste. NUNCA versione o tfvars real.
+
+aws_region = "us-west-2"
+ambiente   = "producao"
+
+# OIDC do GitHub Actions
+github_owner = "leonardodebs"
+github_repo  = "agente-operacoes-aws"
+
+# Deixe true na primeira vez; se a conta JA tiver o OIDC provider do GitHub,
+# defina false para nao tentar cria-lo de novo.
+create_github_oidc_provider = true

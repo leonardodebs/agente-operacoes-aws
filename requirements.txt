@@ -1,0 +1,12 @@
+# Runtime das Lambdas (boto3 ja vem no ambiente da Lambda, fixado aqui p/ testes).
+boto3==1.34.144
+botocore==1.34.144
+
+# Slack
+slack-sdk==3.31.0
+
+# Testes
+pytest==8.2.2
+pytest-mock==3.14.0
+moto==5.0.11
+responses==0.25.3

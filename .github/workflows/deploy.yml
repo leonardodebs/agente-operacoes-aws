@@ -1,0 +1,80 @@
+# Deploy - roda no merge para main. Usa OIDC (sem credenciais armazenadas).
+# A action configure-aws-credentials troca o token OIDC do GitHub por
+# credenciais temporarias via STS, assumindo a role github-actions-deploy.
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# `id-token: write` e o que habilita o fluxo OIDC.
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-west-2
+  # Configure este secret no repo: ARN da role criada pelo Terraform (output
+  # github_actions_role_arn). Nao e uma credencial - so o ARN da role.
+  ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+
+jobs:
+  deploy:
+    name: Terraform apply + atualizar Lambdas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configura credenciais AWS via OIDC (sem chaves)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # A Lambda do Slack precisa do slack_sdk empacotado junto ao codigo.
+      - name: Empacota dependencias da slack-handler
+        run: |
+          pip install slack-sdk==3.31.0 -t lambda/slack/
+
+      - name: terraform init
+        run: terraform -chdir=terraform init
+
+      - name: terraform apply
+        run: terraform -chdir=terraform apply -auto-approve
+
+      # Garante que o codigo mais recente vai para as Lambdas (idempotente).
+      - name: Atualiza codigo das Lambdas
+        run: |
+          TOOLS=$(terraform -chdir=terraform output -raw tools_function_name)
+          SLACK=$(terraform -chdir=terraform output -raw slack_function_name)
+          cd lambda/tools && zip -r ../../tools.zip . >/dev/null && cd ../..
+          cd lambda/slack && zip -r ../../slack.zip . >/dev/null && cd ../..
+          aws lambda update-function-code --function-name "$TOOLS" \
+            --zip-file fileb://tools.zip --region "$AWS_REGION" >/dev/null
+          aws lambda update-function-code --function-name "$SLACK" \
+            --zip-file fileb://slack.zip --region "$AWS_REGION" >/dev/null
+
+      - name: Smoke test - invoca a slack-handler com evento de teste
+        run: |
+          SLACK=$(terraform -chdir=terraform output -raw slack_function_name)
+          # Evento sem assinatura valida: esperamos statusCode 401 (a Lambda
+          # responde, provando que esta no ar e que a validacao funciona).
+          aws lambda invoke --function-name "$SLACK" \
+            --payload '{"headers":{},"body":"{}"}' \
+            --cli-binary-format raw-in-base64-out \
+            --region "$AWS_REGION" resposta.json >/dev/null
+          echo "Resposta da Lambda:" && cat resposta.json
+          grep -q '401' resposta.json \
+            && echo "Smoke test OK (validacao de assinatura ativa)" \
+            || (echo "Smoke test FALHOU" && exit 1)

@@ -1,0 +1,61 @@
+# CI - roda em todo Pull Request. NAO toca na AWS (sem credenciais).
+# Garante qualidade antes do merge: seguranca do Terraform, formatacao,
+# validacao e testes Python com AWS/Slack mockados.
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: Terraform (lint + security)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.5
+
+      - name: terraform fmt
+        run: terraform -chdir=terraform fmt -check -recursive
+
+      - name: terraform init (sem backend)
+        run: terraform -chdir=terraform init -backend=false
+
+      - name: terraform validate
+        run: terraform -chdir=terraform validate
+
+      - name: Checkov (falha em severidade HIGH/CRITICAL)
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: terraform
+          framework: terraform
+          # Falha o job apenas em HIGH e CRITICAL (ruido baixo p/ portfolio).
+          soft_fail: false
+          hard_fail_on: HIGH,CRITICAL
+
+  python:
+    name: Python (testes)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instala dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: pytest (AWS + Slack mockados)
+        run: python -m pytest tests/ -v

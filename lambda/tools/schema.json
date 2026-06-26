@@ -1,0 +1,207 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "AWS Infrastructure Tools API",
+    "version": "2.0.0",
+    "description": "Ferramentas SOMENTE LEITURA para consultar recursos AWS reais (EC2, RDS, ALB, ECS, CloudWatch, Cost Explorer, S3, GuardDuty). Usadas pelo Bedrock Agent infra-ops-production."
+  },
+  "paths": {
+    "/list-ec2": {
+      "post": {
+        "operationId": "list_ec2",
+        "summary": "Lista instancias EC2, opcionalmente filtrando por estado",
+        "description": "Retorna instancias EC2 com id, tipo, estado, tag Name, horario de criacao e IP privado.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "region": {"type": "string", "description": "Regiao AWS (padrao us-west-2)."},
+                  "state": {"type": "string", "description": "Filtro de estado.", "enum": ["running", "stopped", "all"]}
+                }
+              }
+            }
+          }
+        },
+        "responses": {"200": {"description": "Lista de instancias EC2."}}
+      }
+    },
+    "/ec2-details": {
+      "post": {
+        "operationId": "get_ec2_details",
+        "summary": "Detalhes de uma instancia EC2 especifica, incluindo CPU da ultima hora",
+        "description": "Retorna detalhes completos da instancia e metricas de CPU (media/maximo) da ultima hora.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["instance_id"],
+                "properties": {
+                  "instance_id": {"type": "string", "description": "ID da instancia (ex.: i-0abc123)."},
+                  "region": {"type": "string", "description": "Regiao AWS (padrao us-west-2)."}
+                }
+              }
+            }
+          }
+        },
+        "responses": {"200": {"description": "Detalhes da instancia."}}
+      }
+    },
+    "/list-rds": {
+      "post": {
+        "operationId": "list_rds",
+        "summary": "Lista instancias de banco RDS",
+        "description": "Retorna bancos RDS com id, engine, status, classe, Multi-AZ e endpoint.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "region": {"type": "string", "description": "Regiao AWS (padrao us-west-2)."}
+                }
+              }
+            }
+          }
+        },
+        "responses": {"200": {"description": "Lista de bancos RDS."}}
+      }
+    },
+    "/check-alb-health": {
+      "post": {
+        "operationId": "check_alb_health",
+        "summary": "Verifica a saude dos alvos de um Application Load Balancer",
+        "description": "Retorna o estado de saude dos targets de cada target group do ALB.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {"type": "string", "description": "Nome do load balancer."},
+                  "load_balancer_arn": {"type": "string", "description": "ARN do load balancer (alternativa ao nome)."},
+                  "region": {"type": "string", "description": "Regiao AWS (padrao us-west-2)."}
+                }
+              }
+            }
+          }
+        },
+        "responses": {"200": {"description": "Saude dos alvos do ALB."}}
+      }
+    },
+    "/cloudwatch-alarms": {
+      "post": {
+        "operationId": "get_cloudwatch_alarms",
+        "summary": "Lista alarmes do CloudWatch por estado",
+        "description": "Retorna alarmes do CloudWatch filtrados por estado (padrao ALARM = disparados).",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "state": {"type": "string", "description": "Estado do alarme.", "enum": ["ALARM", "OK", "INSUFFICIENT_DATA"]},
+                  "region": {"type": "string", "description": "Regiao AWS (padrao us-west-2)."}
+                }
+              }
+            }
+          }
+        },
+        "responses": {"200": {"description": "Lista de alarmes."}}
+      }
+    },
+    "/list-ecs-services": {
+      "post": {
+        "operationId": "list_ecs_services",
+        "summary": "Lista servicos ECS e suas contagens de tasks",
+        "description": "Retorna servicos ECS com contagens desejada/rodando/pendente. Sem cluster, varre todos.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cluster_name": {"type": "string", "description": "Nome do cluster (opcional)."},
+                  "region": {"type": "string", "description": "Regiao AWS (padrao us-west-2)."}
+                }
+              }
+            }
+          }
+        },
+        "responses": {"200": {"description": "Lista de servicos ECS."}}
+      }
+    },
+    "/cost-summary": {
+      "post": {
+        "operationId": "get_cost_summary",
+        "summary": "Resumo de custos dos ultimos N dias por servico (Cost Explorer)",
+        "description": "Retorna o custo total e o detalhamento por servico AWS nos ultimos N dias (padrao 7). Use para perguntas sobre gastos/custos/billing.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "days": {"type": "integer", "description": "Numero de dias para somar o custo (padrao 7)."}
+                }
+              }
+            }
+          }
+        },
+        "responses": {"200": {"description": "Resumo de custos por servico."}}
+      }
+    },
+    "/list-s3-buckets": {
+      "post": {
+        "operationId": "list_s3_buckets_summary",
+        "summary": "Resumo dos buckets S3 (nome, regiao, data de criacao)",
+        "description": "Retorna a lista de buckets S3 da conta com regiao e data de criacao.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "region": {"type": "string", "description": "Filtra buckets por regiao (opcional)."}
+                }
+              }
+            }
+          }
+        },
+        "responses": {"200": {"description": "Resumo dos buckets S3."}}
+      }
+    },
+    "/guardduty-findings": {
+      "post": {
+        "operationId": "check_guardduty_findings",
+        "summary": "Achados de seguranca do GuardDuty com severidade >= MEDIUM",
+        "description": "Retorna achados ativos do GuardDuty com severidade >= MEDIUM (>= 4.0). Use para perguntas sobre seguranca, ameacas ou achados.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "min_severity": {"type": "number", "description": "Severidade minima (padrao 4.0 = MEDIUM)."},
+                  "region": {"type": "string", "description": "Regiao AWS (padrao us-west-2)."}
+                }
+              }
+            }
+          }
+        },
+        "responses": {"200": {"description": "Achados do GuardDuty."}}
+      }
+    }
+  }
+}
