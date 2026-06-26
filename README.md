@@ -1,5 +1,14 @@
 # agente-operacoes-aws — InfraBot 🤖
 
+[![CI](https://github.com/leonardodebs/agente-operacoes-aws/actions/workflows/ci.yml/badge.svg)](https://github.com/leonardodebs/agente-operacoes-aws/actions/workflows/ci.yml)
+[![Deploy](https://github.com/leonardodebs/agente-operacoes-aws/actions/workflows/deploy.yml/badge.svg)](https://github.com/leonardodebs/agente-operacoes-aws/actions/workflows/deploy.yml)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.5-7B42BC?logo=terraform&logoColor=white)](https://www.terraform.io/)
+[![AWS](https://img.shields.io/badge/AWS-Bedrock%20%7C%20Lambda-FF9900?logo=amazonwebservices&logoColor=white)](https://aws.amazon.com/bedrock/)
+[![Slack](https://img.shields.io/badge/Slack-Bolt%20SDK-4A154B?logo=slack&logoColor=white)](https://api.slack.com/)
+[![OIDC](https://img.shields.io/badge/CI%2FCD-OIDC%20sem%20credenciais-2088FF?logo=githubactions&logoColor=white)](.github/workflows/deploy.yml)
+[![Tests](https://img.shields.io/badge/tests-23%20passing-success)](tests/)
+
 > Agente de IA em **produção** que responde, em português, perguntas sobre a
 > infraestrutura AWS direto no **Slack**. Construído sobre **Amazon Bedrock
 > Agents** (Claude Haiku 4.5), com infraestrutura 100% em **Terraform** e
