@@ -1,4 +1,6 @@
-# agente-operacoes-aws — InfraBot 🤖
+# 🤖 Operações AWS conversacionais — direto no Slack
+
+### InfraBot · `agente-operacoes-aws`
 
 [![CI](https://github.com/leonardodebs/agente-operacoes-aws/actions/workflows/ci.yml/badge.svg)](https://github.com/leonardodebs/agente-operacoes-aws/actions/workflows/ci.yml)
 [![Deploy](https://github.com/leonardodebs/agente-operacoes-aws/actions/workflows/deploy.yml/badge.svg)](https://github.com/leonardodebs/agente-operacoes-aws/actions/workflows/deploy.yml)
